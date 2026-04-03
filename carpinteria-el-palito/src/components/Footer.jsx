@@ -17,7 +17,7 @@ const Footer = () => {
           </p>
           <p className="flex items-center justify-center md:justify-start text-lg opacity-90">
             <MessageSquare className="w-6 h-6 mr-3 text-emerald-300" />
-            info@elpalito.online
+            info@elpalito.com
           </p>
         </div>
 

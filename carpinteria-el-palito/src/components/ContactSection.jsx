@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { MessageSquare } from 'lucide-react'; // Asegúrate de tener los iconos necesarios
+import { MessageSquare } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 // Componente para la sección de Contacto
 const ContactSection = () => {
@@ -17,10 +18,10 @@ const ContactSection = () => {
   };
 
   // Maneja el envío del formulario
-  const handleSubmit = async (e) => { // ¡Importante: Ahora es una función asíncrona!
-    e.preventDefault(); // Previene el comportamiento por defecto del formulario (recargar la página)
-    setStatus(''); // Reinicia cualquier mensaje de estado anterior
-    setIsLoading(true); // Activa el indicador de carga
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus('');
+    setIsLoading(true);
 
     // Validación simple del lado del cliente
     if (!formData.name || !formData.email || !formData.message) {
@@ -35,35 +36,31 @@ const ContactSection = () => {
     }
 
     try {
-      // *** Aquí está la CLAVE: la llamada a tu servidor backend ***
-      // La URL debe coincidir con la de tu servidor Node.js/Express
-      const response = await fetch('http://localhost:3001/api/contact', {
-        method: 'POST', // Método HTTP POST para enviar datos
-        headers: {
-          'Content-Type': 'application/json', // Indica que el cuerpo de la petición es JSON
-        },
-        body: JSON.stringify(formData), // Convierte los datos del formulario a JSON
-      });
+      // Inserción directa en la tabla 'contacts' de Supabase
+      const { error } = await supabase
+        .from('contacts')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+          },
+        ]);
 
-      const result = await response.json(); // Parsea la respuesta del servidor
-
-      // Verifica si la respuesta del servidor fue exitosa (código de estado 2xx)
-      if (response.ok) {
-        setStatus('success: ¡Mensaje enviado con éxito! Nos pondremos en contacto pronto.');
-        setFormData({ name: '', email: '', message: '' }); // Limpia el formulario después del éxito
-        console.log("Mensaje guardado en la base de datos backend:", result);
+      if (error) {
+        console.error('Error de Supabase:', error.message);
+        setStatus(`error: Error al enviar el mensaje. ${error.message}`);
       } else {
-        // Si el servidor responde con un error (ej. 400, 500)
-        setStatus(`error: Error al enviar el mensaje. ${result.error || 'Intenta de nuevo.'}`);
-        console.error("Error del servidor:", result.error);
+        setStatus('success: ¡Mensaje enviado con éxito! Nos pondremos en contacto pronto.');
+        setFormData({ name: '', email: '', message: '' });
+        console.log('Mensaje guardado correctamente en Supabase.');
       }
 
     } catch (error) {
-      // Captura errores de red (ej. el servidor no está corriendo, problemas de CORS)
-      console.error("Error al enviar el mensaje al backend:", error);
-      setStatus(`error: No se pudo conectar con el servidor. Por favor, asegúrate de que el servidor esté funcionando.`);
+      console.error('Error inesperado:', error);
+      setStatus('error: Ocurrió un error inesperado. Por favor, intenta de nuevo.');
     } finally {
-      setIsLoading(false); // Desactiva el indicador de carga, independientemente del resultado
+      setIsLoading(false);
     }
   };
 
